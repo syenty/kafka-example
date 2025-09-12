@@ -1,21 +1,24 @@
 plugins {
     // 실행 가능한 애플리케이션을 위한 플러그인
-    id 'application'
+    id 'org.springframework.boot'
 }
 
-application {
-    // order 앱의 메인 클래스 경로 (이름 변경에 맞춰 수정)
-    mainClass = 'com.example.msa.order.OrderApplication'
-}
+// Spring Boot의 bootJar를 사용하므로 기본 jar 태스크는 비활성화하여 충돌을 방지합니다.
+jar.enabled = false
 
 dependencies {
     // 공통 모듈('common') 의존성 추가
     implementation project(':common')
 
-    // Kafka 클라이언트 라이브러리
-    implementation 'org.apache.kafka:kafka-clients:3.7.0'
+    // Spring Boot Starters (버전은 루트의 dependency-management가 관리)
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.kafka:spring-kafka'
 
-    // 여기에 order 앱에만 필요한 의존성을 추가합니다. (예: Spring Boot, DB Driver 등)
-    // implementation 'org.springframework.boot:spring-boot-starter-web'
-    // implementation 'org.springframework.kafka:spring-kafka'
+    // DB & Migration
+    runtimeOnly 'org.postgresql:postgresql'
+
+    // Lombok
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
 }
