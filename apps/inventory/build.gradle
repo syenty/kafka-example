@@ -4,8 +4,8 @@ plugins {
 }
 
 application {
-    // order 앱의 메인 클래스 경로 (이름 변경에 맞춰 수정)
-    mainClass = 'com.example.msa.order.InventoryApplication'
+    // inventory 앱의 메인 클래스 경로
+    mainClass = 'com.example.msa.inventory.InventoryApplication'
 }
 
 dependencies {
@@ -15,7 +15,7 @@ dependencies {
     // Kafka 클라이언트 라이브러리
     implementation 'org.apache.kafka:kafka-clients:3.7.0'
 
-    // 여기에 order 앱에만 필요한 의존성을 추가합니다. (예: Spring Boot, DB Driver 등)
+    // 여기에 inventory 앱에만 필요한 의존성을 추가합니다. (예: Spring Boot, DB Driver 등)
     // implementation 'org.springframework.boot:spring-boot-starter-web'
     // implementation 'org.springframework.kafka:spring-kafka'
 }
