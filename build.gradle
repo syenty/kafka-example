@@ -1,0 +1,32 @@
+plugins {
+    // 루트 프로젝트에서는 java 플러그인만 적용하여 하위 프로젝트들의 기반 역할을 합니다.
+    id 'java'
+}
+
+// 'subprojects' 블록을 사용하여 모든 하위 프로젝트(apps:*, common)에 공통 설정을 적용합니다.
+subprojects {
+    apply plugin: 'java'
+
+    group = 'com.example.msa'
+    version = '0.0.1-SNAPSHOT'
+
+    repositories {
+        mavenCentral()
+    }
+
+    java {
+        // 모든 프로젝트에 Java 21 버전을 적용합니다.
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
+    }
+
+    dependencies {
+        // 모든 하위 프로젝트에 공통으로 추가될 테스트 의존성
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.2'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.10.2'
+    }
+
+    tasks.named('test') {
+        useJUnitPlatform()
+    }
+}
