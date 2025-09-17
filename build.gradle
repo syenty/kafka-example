@@ -27,8 +27,18 @@ subprojects {
 
     dependencies {
         // 모든 하위 프로젝트에 공통으로 추가될 테스트 의존성
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.2'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.10.2'
+        // Spring Boot 테스트 스타터는 @SpringBootTest, MockMvc 등을 포함합니다.
+        testImplementation platform('org.junit:junit-bom:5.10.2') // JUnit5 버전 관리를 위한 BOM 추가
+        testImplementation 'org.springframework.boot:spring-boot-starter-test' // JUnit5 의존성을 포함
+
+        testImplementation 'org.springframework.kafka:spring-kafka-test'
+
+        testImplementation 'org.testcontainers:junit-jupiter'
+        testImplementation 'org.testcontainers:kafka'
+        testImplementation 'org.testcontainers:postgresql'
+
+        // spring-boot-starter-test가 junit-jupiter-api와 junit-jupiter-engine을
+        // testRuntimeOnly 스코프로 포함하므로 별도 선언이 필요 없습니다.
     }
 
     tasks.named('test') {

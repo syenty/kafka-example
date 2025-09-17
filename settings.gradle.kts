@@ -11,4 +11,10 @@ plugins {
 }
 
 rootProject.name = "kafka-example"
-include("app")
+// include("app")
+
+// 프로젝트의 모든 하위 모듈을 포함하도록 수정합니다.
+include("apps:order")
+include("apps:payment")
+include("apps:inventory")
+include("common") // 공통 DTO 등이 포함된 모듈로 추정됩니다.

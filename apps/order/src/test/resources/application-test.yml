@@ -1,0 +1,13 @@
+# 테스트 환경에서는 JPA(Hibernate)가 스키마를 자동으로 생성하고 삭제하도록 설정합니다.
+# create-drop: 세션 팩토리가 시작될 때 스키마를 생성하고, 종료될 때 삭제합니다.
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    # SQL 쿼리를 로그로 확인하고 싶을 때 주석을 해제하세요.
+    # show-sql: true
+    # properties.hibernate.format_sql: true
+  kafka:
+    producer:
+      # Kafka Producer가 객체를 JSON으로 직렬화하도록 설정합니다.
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
