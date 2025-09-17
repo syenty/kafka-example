@@ -1,4 +1,4 @@
-rootProject.name = 'kafka-msa-example'
+rootProject.name = 'kafka-example'
 
 include 'common'
 
