@@ -82,7 +82,7 @@ public class OrderIntegrationTest {
     @Test
     void createOrder_ShouldSaveOrderAndPublishEvent() {
         // given: 주문 생성 요청 데이터
-        CreateOrderRequest request = new CreateOrderRequest("inv-123", 10);
+        CreateOrderRequest request = new CreateOrderRequest("SKU-123", 10);
 
         // when: 주문 생성 서비스 호출
         Long orderId = orderService.createOrder(request);
@@ -91,7 +91,7 @@ public class OrderIntegrationTest {
         Optional<Order> savedOrderOpt = orderRepository.findById(orderId);
         assertTrue(savedOrderOpt.isPresent(), "주문이 데이터베이스에 저장되어야 합니다.");
         Order savedOrder = savedOrderOpt.get();
-        assertEquals(request.getInventoryId(), savedOrder.getInventoryId());
+        assertEquals(request.getSku(), savedOrder.getSku());
         assertEquals(request.getQuantity(), savedOrder.getQuantity());
 
         // then: "주문 생성됨" 이벤트가 Kafka에 발행되었는지 확인
@@ -113,7 +113,7 @@ public class OrderIntegrationTest {
             OrderCreatedEvent event = record.value();
 
             assertEquals(orderId, event.getOrderId());
-            assertEquals(request.getInventoryId(), event.getInventoryId());
+            assertEquals(request.getSku(), event.getSku());
             assertEquals(request.getQuantity(), event.getQuantity());
         }
     }

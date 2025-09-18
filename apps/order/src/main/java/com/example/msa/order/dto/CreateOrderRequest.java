@@ -9,6 +9,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 @AllArgsConstructor
 public class CreateOrderRequest {
-    private String inventoryId;
+    private String sku;
     private Integer quantity;
 }

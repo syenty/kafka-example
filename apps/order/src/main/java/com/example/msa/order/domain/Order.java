@@ -18,14 +18,14 @@ public class Order {
     private Long id;
 
     @Column(nullable = false)
-    private String inventoryId;
+    private String sku;
 
     @Column(nullable = false)
     private Integer quantity;
 
     @Builder
-    public Order(String inventoryId, Integer quantity) {
-        this.inventoryId = inventoryId;
+    public Order(String sku, Integer quantity) {
+        this.sku = sku;
         this.quantity = quantity;
     }
 }

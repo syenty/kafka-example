@@ -1,4 +1,4 @@
-package com.example.msa.payment.integration;
+package com.example.msa.inventory.integration;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -20,6 +20,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -36,17 +37,16 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
 import com.example.msa.common.dto.OrderCreatedEvent;
-import com.example.msa.common.dto.PaymentCompletedEvent;
-import com.example.msa.common.dto.PaymentFailedEvent;
-import com.example.msa.payment.domain.Payment;
-import com.example.msa.payment.domain.PaymentStatus;
-import com.example.msa.payment.repository.PaymentRepository;
+import com.example.msa.common.dto.InventoryFailedEvent;
+import com.example.msa.common.dto.InventoryReservedEvent;
+import com.example.msa.inventory.domain.Inventory;
+import com.example.msa.inventory.repository.InventoryRepository;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 @AutoConfigureMockMvc
 @Testcontainers// 동적 속성 주입
-public class PaymentIntegrationTest {
+public class InventoryIntegrationTest {
     
     // 테스트 실행 시 PostgreSQL 17 버전 컨테이너를 실행합니다.
     @Container
@@ -58,7 +58,7 @@ public class PaymentIntegrationTest {
     static KafkaContainer kafka = new KafkaContainer(DockerImageName.parse("apache/kafka:4.1.0"));
 
     @Autowired
-    private PaymentRepository paymentRepository;
+    private InventoryRepository inventoryRepository;
 
     @Autowired
     private DataSource dataSource;
@@ -85,29 +85,30 @@ public class PaymentIntegrationTest {
     }
 
     @Test
-    void handleOrderCreated_ShouldProcessPaymentSuccessfully() {
-        // given: 결제 성공 조건에 맞는 주문 생성 이벤트 (수량 <= 10)
+    void handleOrderCreated_ShouldReserveInventorySuccessfully() {
+        // given: 충분한 재고가 있는 상품
+        String sku = "SKU-SUCCESS-001";
+        inventoryRepository.save(Inventory.builder().sku(sku).quantity(20).build());
         long orderId = System.currentTimeMillis();
-        OrderCreatedEvent event = new OrderCreatedEvent(orderId, "SKU-123", 5);
+        OrderCreatedEvent event = new OrderCreatedEvent(orderId, sku, 10);
 
         // when: 'order-created' 토픽으로 이벤트를 발행
         kafkaTemplate.send("order-created", event);
 
-        // then: 잠시 후, 결제가 완료되고 데이터베이스에 저장되며, 'payment-completed' 이벤트가 발행되어야 함
+        // then: 잠시 후, 재고가 차감되고 'inventory-reserved' 이벤트가 발행되어야 함
         Awaitility.await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
-            // 1. DB에 결제 정보가 'COMPLETED' 상태로 저장되었는지 확인
-            Optional<Payment> paymentOpt = paymentRepository.findByOrderId(orderId);
-            assertTrue(paymentOpt.isPresent(), "결제 정보가 DB에 저장되어야 합니다.");
-            assertEquals(PaymentStatus.COMPLETED, paymentOpt.get().getStatus());
-            assertEquals(orderId, paymentOpt.get().getOrderId());
+            // 1. DB에서 재고가 정상적으로 차감되었는지 확인
+            Optional<Inventory> inventoryOpt = inventoryRepository.findBySku(sku);
+            assertTrue(inventoryOpt.isPresent(), "재고 정보가 DB에 존재해야 합니다.");
+            assertEquals(10, inventoryOpt.get().getQuantity(), "재고가 10만큼 차감되어야 합니다.");
 
-            // 2. 'payment-completed' 토픽에 이벤트가 발행되었는지 확인
-            try (KafkaConsumer<String, PaymentCompletedEvent> consumer = createConsumer("payment-completed-group", PaymentCompletedEvent.class)) {
-                consumer.subscribe(Collections.singletonList("payment-completed"));
-                ConsumerRecords<String, PaymentCompletedEvent> records = consumer.poll(Duration.ofSeconds(5));
+            // 2. 'inventory-reserved' 토픽에 이벤트가 발행되었는지 확인
+            try (KafkaConsumer<String, InventoryReservedEvent> consumer = createConsumer("inventory-reserved-group", InventoryReservedEvent.class)) {
+                consumer.subscribe(Collections.singletonList("inventory-reserved"));
+                ConsumerRecords<String, InventoryReservedEvent> records = consumer.poll(Duration.ofSeconds(5));
 
                 boolean eventFound = false;
-                for (ConsumerRecord<String, PaymentCompletedEvent> record : records) {
+                for (ConsumerRecord<String, InventoryReservedEvent> record : records) {
                     if (record.value().getOrderId().equals(orderId)) {
                         eventFound = true;
                         break;
@@ -119,31 +120,32 @@ public class PaymentIntegrationTest {
     }
 
     @Test
-    void handleOrderCreated_ShouldHandlePaymentFailure() {
-        // given: 결제 실패 조건에 맞는 주문 생성 이벤트 (수량 > 10)
+    void handleOrderCreated_ShouldFailInventoryReservation_WhenStockIsInsufficient() {
+        // given: 재고가 부족한 상품
+        String sku = "SKU-FAIL-001";
+        inventoryRepository.save(Inventory.builder().sku(sku).quantity(5).build());
         long orderId = System.currentTimeMillis();
-        OrderCreatedEvent event = new OrderCreatedEvent(orderId, "SKU-456", 15);
+        OrderCreatedEvent event = new OrderCreatedEvent(orderId, sku, 10);
 
         // when: 'order-created' 토픽으로 이벤트를 발행
         kafkaTemplate.send("order-created", event);
 
-        // then: 잠시 후, 결제가 실패하고 데이터베이스에 저장되며, 'payment-failed' 이벤트가 발행되어야 함
+        // then: 잠시 후, 재고는 변동이 없고 'inventory-failed' 이벤트가 발행되어야 함
         Awaitility.await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
-            // 1. DB에 결제 정보가 'FAILED' 상태로 저장되었는지 확인
-            Optional<Payment> paymentOpt = paymentRepository.findByOrderId(orderId);
-            assertTrue(paymentOpt.isPresent(), "결제 정보가 DB에 저장되어야 합니다.");
-            assertEquals(PaymentStatus.FAILED, paymentOpt.get().getStatus());
-            assertEquals(orderId, paymentOpt.get().getOrderId());
+            // 1. DB에서 재고가 변동이 없는지 확인
+            Optional<Inventory> inventoryOpt = inventoryRepository.findBySku(sku);
+            assertTrue(inventoryOpt.isPresent(), "재고 정보가 DB에 존재해야 합니다.");
+            assertEquals(5, inventoryOpt.get().getQuantity(), "재고가 변동되지 않아야 합니다.");
 
-            // 2. 'payment-failed' 토픽에 이벤트가 발행되었는지 확인
-            try (KafkaConsumer<String, PaymentFailedEvent> consumer = createConsumer("payment-failed-group", PaymentFailedEvent.class)) {
-                consumer.subscribe(Collections.singletonList("payment-failed"));
-                ConsumerRecords<String, PaymentFailedEvent> records = consumer.poll(Duration.ofSeconds(5));
+            // 2. 'inventory-failed' 토픽에 이벤트가 발행되었는지 확인
+            try (KafkaConsumer<String, InventoryFailedEvent> consumer = createConsumer("inventory-failed-group", InventoryFailedEvent.class)) {
+                consumer.subscribe(Collections.singletonList("inventory-failed"));
+                ConsumerRecords<String, InventoryFailedEvent> records = consumer.poll(Duration.ofSeconds(5));
 
                 boolean eventFound = false;
-                for (ConsumerRecord<String, PaymentFailedEvent> record : records) {
+                for (ConsumerRecord<String, InventoryFailedEvent> record : records) {
                     if (record.value().getOrderId().equals(orderId)) {
-                        assertEquals("잔액 부족 또는 주문 수량 과다", record.value().getReason());
+                        assertEquals("재고 부족", record.value().getReason());
                         eventFound = true;
                         break;
                     }

@@ -11,8 +11,6 @@ import lombok.ToString;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode
-public class OrderCreatedEvent {
+public class InventoryReservedEvent {
     private Long orderId;
-    private String sku;
-    private int quantity;
 }
