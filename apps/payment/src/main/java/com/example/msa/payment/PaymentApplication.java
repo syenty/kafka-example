@@ -1,7 +1,13 @@
 package com.example.msa.payment;
 
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.kafka.annotation.EnableKafka;
+
+@SpringBootApplication
+@EnableKafka
 public class PaymentApplication {
     public static void main(String[] args) {
-        System.out.println("Starting Payment Service...");
+        SpringApplication.run(PaymentApplication.class, args);
     }
 }
