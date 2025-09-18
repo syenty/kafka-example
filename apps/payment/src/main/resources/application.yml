@@ -1,6 +1,4 @@
 spring:
-  kafka:
-    bootstrap-servers: localhost:9092 # 로컬 개발용. docker-compose에서는 환경 변수로 오버라이드됩니다.
   datasource:
     url: jdbc:postgresql://postgres-payment:5433/payment
     username: user
@@ -12,3 +10,6 @@ spring:
   sql:
     init:
       mode: always
+  kafka:
+    consumer:
+      group-id: payment-group

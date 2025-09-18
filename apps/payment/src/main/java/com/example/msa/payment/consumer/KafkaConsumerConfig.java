@@ -21,10 +21,18 @@ public class KafkaConsumerConfig {
     @Value("${spring.kafka.bootstrap-servers}")
     private String bootstrapServers;
 
+    // application.yml의 group-id를 주입받도록 추가
+    @Value("${spring.kafka.consumer.group-id}")
+    private String groupId;
+
     @Bean
     public ConsumerFactory<String, OrderCreatedEvent> consumerFactory() {
         Map<String, Object> props = new HashMap<>();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        // 테스트 격리를 위해 application-test.yml에 설정된 group-id를 사용하도록 추가
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
+        // 토픽의 처음부터 메시지를 읽도록 'earliest'로 설정 (핵심 변경사항)
+        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
 
         JsonDeserializer<OrderCreatedEvent> deserializer = new JsonDeserializer<>(OrderCreatedEvent.class, false);
         deserializer.addTrustedPackages("com.example.msa.common.dto"); // common 모듈의 DTO를 신뢰하도록 설정

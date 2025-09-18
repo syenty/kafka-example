@@ -26,7 +26,7 @@ public class PaymentService {
     private final PaymentRepository paymentRepository;
 
     @Transactional
-    @KafkaListener(topics = ORDER_CREATED_TOPIC, groupId = "payment-group", containerFactory = "kafkaListenerContainerFactory")
+    @KafkaListener(topics = ORDER_CREATED_TOPIC, groupId = "${spring.kafka.consumer.group-id}", containerFactory = "kafkaListenerContainerFactory")
     public void handleOrderCreated(OrderCreatedEvent event) {
         log.info("Received order created event for orderId: {}", event.getOrderId());
 
