@@ -3,7 +3,7 @@ plugins {
     id 'org.springframework.boot'
 }
 
-description = 'Order App'
+description = 'Payment App'
 
 // Spring Boot의 bootJar를 사용하므로 기본 jar 태스크는 비활성화하여 충돌을 방지합니다.
 jar.enabled = false

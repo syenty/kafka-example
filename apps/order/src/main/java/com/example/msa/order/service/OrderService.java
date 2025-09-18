@@ -6,6 +6,7 @@ import com.example.msa.order.dto.CreateOrderRequest;
 import com.example.msa.order.repository.OrderRepository;
 
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,7 +23,7 @@ public class OrderService {
     public Long createOrder(CreateOrderRequest request) {
         // 1. 주문 정보 저장
         Order order = Order.builder()
-                .inventoryId(request.getInventoryId())
+                .sku(request.getSku())
                 .quantity(request.getQuantity())
                 .build();
         orderRepository.save(order);
@@ -30,7 +31,7 @@ public class OrderService {
         // 2. "주문 생성됨" 이벤트 발행
         OrderCreatedEvent event = new OrderCreatedEvent(
                 order.getId(),
-                order.getInventoryId(),
+                order.getSku(),
                 order.getQuantity()
         );
         kafkaTemplate.send(ORDER_CREATED_TOPIC, event);
