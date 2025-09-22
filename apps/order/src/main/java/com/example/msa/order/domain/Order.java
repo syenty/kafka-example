@@ -17,15 +17,44 @@ public class Order {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Version
+    private Long version;
+
     @Column(nullable = false)
     private String sku;
 
     @Column(nullable = false)
     private Integer quantity;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private OrderStatus status;
+
+    private boolean paymentCompleted = false;
+    private boolean inventoryReserved = false;
+
     @Builder
     public Order(String sku, Integer quantity) {
         this.sku = sku;
         this.quantity = quantity;
+        this.status = OrderStatus.PENDING;
+    }
+
+    public void completePayment() {
+        this.paymentCompleted = true;
+        if (this.inventoryReserved) {
+            this.status = OrderStatus.CONFIRMED;
+        }
+    }
+
+    public void reserveInventory() {
+        this.inventoryReserved = true;
+        if (this.paymentCompleted) {
+            this.status = OrderStatus.CONFIRMED;
+        }
+    }
+
+    public void cancel() {
+        this.status = OrderStatus.CANCELLED;
     }
 }
