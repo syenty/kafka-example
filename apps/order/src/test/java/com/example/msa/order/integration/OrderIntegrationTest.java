@@ -10,6 +10,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import javax.sql.DataSource;
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
@@ -17,10 +18,12 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.serialization.StringDeserializer;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -32,7 +35,11 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
 import com.example.msa.common.dto.OrderCreatedEvent;
+import com.example.msa.common.dto.PaymentCompletedEvent;
+import com.example.msa.common.dto.InventoryReservedEvent;
+import com.example.msa.common.dto.PaymentFailedEvent;
 import com.example.msa.order.domain.Order;
+import com.example.msa.order.domain.OrderStatus;
 import com.example.msa.order.dto.CreateOrderRequest;
 import com.example.msa.order.repository.OrderRepository;
 import com.example.msa.order.service.OrderService;
@@ -60,6 +67,9 @@ public class OrderIntegrationTest {
 
     @Autowired
     private DataSource dataSource;
+
+    @Autowired
+    private KafkaTemplate<String, Object> kafkaTemplate;
 
     // 3. @DynamicPropertySource를 사용하여 동적 속성을 더 깔끔하게 주입합니다.
     @DynamicPropertySource
@@ -116,5 +126,55 @@ public class OrderIntegrationTest {
             assertEquals(request.getSku(), event.getSku());
             assertEquals(request.getQuantity(), event.getQuantity());
         }
+    }
+
+    @Test
+    void handleEvents_ShouldUpdateOrderStatusToConfirmed() {
+        // given: PENDING 상태의 주문을 데이터베이스에 직접 저장
+        Order order = Order.builder()
+                .sku("SKU-CONFIRM")
+                .quantity(5)
+                .build();
+        orderRepository.save(order);
+        Long orderId = order.getId();
+
+        // given: 결제 완료 및 재고 예약 이벤트 생성
+        PaymentCompletedEvent paymentEvent = new PaymentCompletedEvent(orderId);
+        InventoryReservedEvent inventoryEvent = new InventoryReservedEvent(orderId);
+
+        // when: 결제 및 재고 관련 이벤트를 Kafka 토픽으로 발행
+        kafkaTemplate.send("payment-completed", paymentEvent);
+        kafkaTemplate.send("inventory-reserved", inventoryEvent);
+
+        // then: 잠시 후, 주문 상태가 CONFIRMED로 변경되어야 함
+        Awaitility.await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
+            Optional<Order> updatedOrderOpt = orderRepository.findById(orderId);
+            assertTrue(updatedOrderOpt.isPresent(), "주문이 DB에 존재해야 합니다.");
+            assertEquals(OrderStatus.CONFIRMED, updatedOrderOpt.get().getStatus(), "주문 상태가 CONFIRMED여야 합니다.");
+        });
+    }
+
+    @Test
+    void handlePaymentFailedEvent_ShouldUpdateOrderStatusToCancelled() {
+        // given: PENDING 상태의 주문을 데이터베이스에 직접 저장
+        Order order = Order.builder()
+                .sku("SKU-CANCEL")
+                .quantity(20)
+                .build();
+        orderRepository.save(order);
+        Long orderId = order.getId();
+
+        // given: 결제 실패 이벤트 생성
+        PaymentFailedEvent paymentFailedEvent = new PaymentFailedEvent(orderId, "잔액 부족");
+
+        // when: 결제 실패 이벤트를 Kafka 토픽으로 발행
+        kafkaTemplate.send("payment-failed", paymentFailedEvent);
+
+        // then: 잠시 후, 주문 상태가 CANCELLED로 변경되어야 함
+        Awaitility.await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
+            Optional<Order> updatedOrderOpt = orderRepository.findById(orderId);
+            assertTrue(updatedOrderOpt.isPresent(), "주문이 DB에 존재해야 합니다.");
+            assertEquals(OrderStatus.CANCELLED, updatedOrderOpt.get().getStatus(), "주문 상태가 CANCELLED여야 합니다.");
+        });
     }
 }
