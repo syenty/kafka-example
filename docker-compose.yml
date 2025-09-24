@@ -123,6 +123,8 @@ services:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: "kafka1:9092,kafka2:9092,kafka3:9092"
     networks:
       - kafka-net
+    ports:
+      - "8080:8080" # order 서비스의 8080 포트를 호스트의 8080 포트로 노출
     restart: on-failure
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
@@ -171,6 +173,8 @@ services:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: "kafka1:9092,kafka2:9092,kafka3:9092"
     networks:
       - kafka-net
+    ports:
+      - "8081:8081" # payment 서비스의 8081 포트를 호스트의 8081 포트로 노출
     restart: on-failure
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
@@ -219,6 +223,8 @@ services:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: "kafka1:9092,kafka2:9092,kafka3:9092"
     networks:
       - kafka-net
+    ports:
+      - "8082:8082" # inventory 서비스의 8082 포트를 호스트의 8082 포트로 노출
     restart: on-failure
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8082/actuator/health"]
