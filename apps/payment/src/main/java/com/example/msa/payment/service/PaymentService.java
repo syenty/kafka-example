@@ -1,5 +1,6 @@
 package com.example.msa.payment.service;
 
+import com.example.msa.common.dto.InventoryFailedEvent;
 import com.example.msa.common.dto.OrderCreatedEvent;
 import com.example.msa.common.dto.PaymentCompletedEvent;
 import com.example.msa.common.dto.PaymentFailedEvent;
@@ -21,6 +22,7 @@ public class PaymentService {
     private static final String ORDER_CREATED_TOPIC = "order-created";
     private static final String PAYMENT_COMPLETED_TOPIC = "payment-completed";
     private static final String PAYMENT_FAILED_TOPIC = "payment-failed";
+    private static final String INVENTORY_FAILED_TOPIC = "inventory-failed";
 
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final PaymentRepository paymentRepository;
@@ -67,4 +69,24 @@ public class PaymentService {
         return event.getQuantity() <= 10;
     }
 
+    @Transactional
+    @KafkaListener(topics = INVENTORY_FAILED_TOPIC, groupId = "${spring.kafka.consumer.group-id}", containerFactory = "kafkaListenerContainerFactory")
+    public void handleInventoryFailed(InventoryFailedEvent event) {
+        log.info("Received inventory failed event for orderId: {}. Initiating payment cancellation.", event.getOrderId());
+
+        paymentRepository.findByOrderId(event.getOrderId()).ifPresent(payment -> {
+            // 이미 결제가 완료된 경우, 결제를 취소(환불)하는 보상 트랜잭션을 수행합니다.
+            if (payment.getStatus() == PaymentStatus.COMPLETED) {
+                payment.cancel(event.getReason()); // 파라미터로 받은 실패 사유를 전달
+                paymentRepository.save(payment);
+                log.info("Payment cancelled for orderId: {}", event.getOrderId());
+
+                // OrderService 및 다른 서비스에 결제가 최종적으로 실패했음을 알리기 위해 PaymentFailedEvent를 발행합니다.
+                PaymentFailedEvent failedEvent = new PaymentFailedEvent(event.getOrderId(), event.getReason());
+                kafkaTemplate.send(PAYMENT_FAILED_TOPIC, failedEvent);
+                log.info("Published 'payment-failed' event for orderId: {} due to inventory failure.", event.getOrderId());
+                // 실제 운영 환경에서는 환불 API 호출 등의 로직이 추가됩니다.
+            }
+        });
+    }
 }

@@ -29,4 +29,9 @@ public class Payment {
         this.status = status;
         this.reason = reason;
     }
+
+    public void cancel(String reason) {
+        this.status = PaymentStatus.FAILED;
+        this.reason = reason;
+    }
 }
