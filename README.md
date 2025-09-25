@@ -2,7 +2,7 @@
 
 이 프로젝트는 Spring Boot, Apache Kafka, Docker를 사용한 마이크로서비스 아키텍처의 샘플 구현입니다. 이커머스 주문 처리 시나리오에서 분산된 서비스 간의 데이터 일관성을 유지하기 위해 Saga 패턴(Choreography 기반)을 사용합니다.
 
-## Architecture
+## 아키텍처 (Architecture)
 
 시스템은 Kafka 이벤트를 통해 비동기적으로 통신하는 세 가지 핵심 마이크로서비스로 구성됩니다:
 
@@ -10,7 +10,7 @@
 - **Payment Service**: 주문에 대한 결제를 처리합니다.
 - **Inventory Service**: 상품 재고를 관리하고 주문에 대한 재고를 예약합니다.
 
-### Event-Driven Flow (Saga Pattern)
+### 이벤트 기반 흐름 (Saga Pattern)
 
 서비스들은 주문 트랜잭션을 처리하기 위해 Choreography 기반 Saga 패턴을 따릅니다:
 
@@ -26,7 +26,7 @@
 
 _(간단한 아키텍처 다이어그램을 만들어 여기에 추가하는 것을 강력히 권장합니다)_
 
-## Tech Stack
+## 기술 스택 (Tech Stack)
 
 - **Backend**: Java 21, Spring Boot 3
 - **Messaging**: Apache Kafka
@@ -35,25 +35,23 @@ _(간단한 아키텍처 다이어그램을 만들어 여기에 추가하는 것
 - **Containerization**: Docker, Docker Compose
 - **Testing**: JUnit 5, Testcontainers
 
-## Prerequisites
+## 사전 요구사항 (Prerequisites)
 
 - Java 21 이상
 - Docker 및 Docker Compose
 
-## Getting Started
+## 시작하기 (Getting Started)
 
-시작하기
+로컬 머신에서 프로젝트를 설정하고 실행하려면 다음 단계를 따르세요.
 
-Follow these steps to get the project up and running on your local machine.
-
-### 1. Clone the Repository
+### 1. 저장소 복제 (Clone the Repository)
 
 ```bash
 git clone <your-repository-url>
 cd kafka-example
 ```
 
-### 2. Set Up Environment Variables
+### 2. 환경 변수 설정 (Set Up Environment Variables)
 
 예제 환경 변수 파일을 복사하여 로컬 설정을 생성합니다.
 
@@ -61,35 +59,35 @@ cd kafka-example
 cp .env.example .env
 ```
 
-The default values in the `.env` file are suitable for the local Docker Compose setup.
+`.env` 파일의 기본값은 로컬 Docker Compose 환경에 적합합니다.
 
-### 3. Build and Run the Application
+### 3. 애플리케이션 빌드 및 실행 (Build and Run the Application)
 
-Use Docker Compose to build the images for all services and run the entire stack (including Kafka and PostgreSQL).
+Docker Compose를 사용하여 모든 서비스의 이미지를 빌드하고 전체 스택(Kafka, PostgreSQL 포함)을 실행합니다.
 
 ```bash
 docker-compose up --build
 ```
 
-This command will:
+이 명령어는 다음 작업을 수행합니다:
 
-1.  Build the Docker images for `order`, `payment`, and `inventory` services.
-2.  Start containers for all services, including the Kafka cluster and PostgreSQL databases.
-3.  Run health checks to ensure services start in the correct order.
+1.  `order`, `payment`, `inventory` 서비스의 Docker 이미지를 빌드합니다.
+2.  Kafka 클러스터와 PostgreSQL 데이터베이스를 포함한 모든 서비스의 컨테이너를 시작합니다.
+3.  Health check를 실행하여 서비스들이 올바른 순서로 시작되도록 보장합니다.
 
-You can stop all services by pressing `Ctrl+C` and then running:
+`Ctrl+C`를 눌러 모든 서비스를 중지한 후, 아래 명령어로 컨테이너를 정리할 수 있습니다:
 
 ```bash
 docker-compose down
 ```
 
-## How to Use
+## 사용 방법 (How to Use)
 
-Once all services are running, you can interact with the system by calling the `Order Service` API.
+모든 서비스가 실행되면, `Order Service` API를 호출하여 시스템과 상호작용할 수 있습니다.
 
-### Create a New Order
+### 주문 생성하기 (Create a New Order)
 
-Send a `POST` request to the Order Service.
+Order Service로 `POST` 요청을 보냅니다.
 
 ```bash
 curl -X POST http://localhost:8080/orders \
@@ -100,14 +98,14 @@ curl -X POST http://localhost:8080/orders \
 }'
 ```
 
-- To simulate a **payment failure**, set the `quantity` to a value greater than 10.
-- To simulate an **inventory failure**, use a `sku` that does not exist in the inventory.
+- **결제 실패**를 시뮬레이션하려면, `quantity`를 10보다 큰 값으로 설정하세요.
+- **재고 부족 실패**를 시뮬레이션하려면, 존재하지 않는 `sku`를 사용하세요.
 
-## Running Tests
+## 테스트 실행 (Running Tests)
 
-The project includes integration tests using Testcontainers, which automatically spin up the necessary Kafka and PostgreSQL containers for each test run.
+이 프로젝트는 Testcontainers를 사용한 통합 테스트를 포함하고 있습니다. 각 테스트 실행 시 필요한 Kafka 및 PostgreSQL 컨테이너가 자동으로 실행됩니다.
 
-To run the tests for all modules, execute the following Gradle command from the project root:
+모든 모듈의 테스트를 실행하려면, 프로젝트 루트에서 아래의 Gradle 명령어를 실행하세요:
 
 ```bash
 ./gradlew test
