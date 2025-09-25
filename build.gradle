@@ -1,0 +1,47 @@
+plugins {
+    // 루트 프로젝트에서는 java 플러그인만 적용하여 하위 프로젝트들의 기반 역할을 합니다.
+    id 'java'
+    // Spring Boot와 의존성 관리 플러그인을 모든 하위 프로젝트에서 사용할 수 있도록 등록합니다.
+    // 'apply false'를 통해 루트 프로젝트 자체에는 적용하지 않습니다.
+    id 'org.springframework.boot' version '3.5.5' apply false
+    id 'io.spring.dependency-management' version '1.1.7' apply false
+}
+
+// 'subprojects' 블록을 사용하여 모든 하위 프로젝트(apps:*, common)에 공통 설정을 적용합니다.
+subprojects {
+    apply plugin: 'java' // 이미 적용되어 있지만 명시적으로 남겨둡니다.
+    apply plugin: 'io.spring.dependency-management'
+
+    group = 'com.example.msa'
+    version = '0.0.1-SNAPSHOT'
+
+    repositories {
+        mavenCentral()
+    }
+
+    java {
+        // 모든 프로젝트에 Java 21 버전을 적용합니다.
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
+    }
+
+    dependencies {
+        // 모든 하위 프로젝트에 공통으로 추가될 테스트 의존성
+        // Spring Boot 테스트 스타터는 @SpringBootTest, MockMvc 등을 포함합니다.
+        testImplementation platform('org.junit:junit-bom:5.10.2') // JUnit5 버전 관리를 위한 BOM 추가
+        testImplementation 'org.springframework.boot:spring-boot-starter-test' // JUnit5 의존성을 포함
+
+        testImplementation 'org.springframework.kafka:spring-kafka-test'
+
+        testImplementation 'org.testcontainers:junit-jupiter'
+        testImplementation 'org.testcontainers:kafka'
+        testImplementation 'org.testcontainers:postgresql'
+
+        // spring-boot-starter-test가 junit-jupiter-api와 junit-jupiter-engine을
+        // testRuntimeOnly 스코프로 포함하므로 별도 선언이 필요 없습니다.
+    }
+
+    tasks.named('test') {
+        useJUnitPlatform()
+    }
+}

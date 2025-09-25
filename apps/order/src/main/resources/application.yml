@@ -1,0 +1,21 @@
+service:
+  port: 8080
+spring:
+  datasource:
+    url: jdbc:postgresql://postgres-order:5432/order
+    username: user
+    password: password
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      # ddl-auto: none
+      ddl-auto: create-drop
+  sql:
+    init:
+      mode: always
+  kafka:
+    producer:
+      # Kafka Producer가 객체를 JSON으로 직렬화하도록 설정합니다.
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    consumer:
+      group-id: order-group
