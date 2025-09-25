@@ -78,7 +78,7 @@ public class OrderService {
     public void handlePaymentFailed(PaymentFailedEvent event) {
         log.info("Received payment failed event for orderId: {}. Reason: {}", event.getOrderId(), event.getReason());
         orderRepository.findById(event.getOrderId()).ifPresent(order -> {
-            order.cancel();
+            order.cancelByPaymentFailure();
             orderRepository.save(order);
             log.info("Order cancelled for orderId: {}. Current status: {}", order.getId(), order.getStatus());
         });
@@ -89,7 +89,7 @@ public class OrderService {
     public void handleInventoryFailed(InventoryFailedEvent event) {
         log.info("Received inventory failed event for orderId: {}. Reason: {}", event.getOrderId(), event.getReason());
         orderRepository.findById(event.getOrderId()).ifPresent(order -> {
-            order.cancel();
+            order.cancelByInventoryFailure();
             orderRepository.save(order);
             log.info("Order cancelled for orderId: {}. Current status: {}", order.getId(), order.getStatus());
         });

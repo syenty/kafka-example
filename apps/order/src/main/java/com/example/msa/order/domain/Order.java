@@ -57,4 +57,14 @@ public class Order {
     public void cancel() {
         this.status = OrderStatus.CANCELLED;
     }
+
+    public void cancelByPaymentFailure() {
+        this.status = OrderStatus.CANCELLED;
+        this.paymentCompleted = false; // 결제 상태 롤백
+    }
+
+    public void cancelByInventoryFailure() {
+        this.status = OrderStatus.CANCELLED;
+        this.inventoryReserved = false; // 재고 상태 롤백
+    }
 }
